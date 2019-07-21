@@ -8,14 +8,19 @@ cls()
 draw = {} 
 drawing = {}
 wave_y = -1
-max_y = 0
-min_x = 0
-max_x = 0
 
-sparks={7,9,10,6,0}
+sparks = {}
+sparks_clr={7,9,10,6,0}
 
-function _update60()
- cls()
+
+falling = {}
+
+branch_clr={4,3,11}
+
+
+function _update()
+ 
+ 
  // small delay to ensure
  // a single generation per
  // button press
@@ -27,71 +32,118 @@ function _update60()
    resume_t = time() + 0.3
    draw = {}
    drawing = {}
-  	iteration()
-  	wave_y = 127
-  	
-  	max_y = 127
-  	max_x = 0
-  	min_x = 127
-   for i=1,#draw,1 do
-				x,y,dx,dy = unpackl(draw[i])
-   	if draw[i][4] < max_y then
-   	 max_y = draw[i][4]
-   	end
-   	if draw[i][3] > max_x then
-   	 max_x = draw[i][3]
-   	end
-   	if draw[i][3] < min_x then
-   	 min_x = draw[i][3]
-   	end
-   	
+   iteration()
+   wave_y = 130
+   --[[for i=#draw,1,-1 do
+    print(draw[i][4])
    end
-   max_y = max_y - 10
-   min_x = min_x - 10
-   max_x = max_x + 10
+   stop()]]--
   end
   
- 	if wave_y > -1 then
-   wave_y = wave_y - 1
+  if wave_y > -5 then
+   wave_y = wave_y - 2
   end
   
-  if wave_y < max_y then
-   if max_x-min_x <= 1 then
-    wave_y = -1
+  --[[local limit = 15
+  local current = 0
+  for i=#draw,1,-1 do
+   //print(draw[i][4])
+   if draw[i][4] > wave_y then
+    add(drawing,draw[i])
+    del(draw,draw[i])
    else
-    max_x = max_x - 1
-    min_x = min_x + 1
+    break
+   end
+   
+  end--]]
+  
+  // move sparks from initial
+  // table to _draw table
+  for i=#sparks,1,-1 do
+   if sparks[i][2] > wave_y then
+    add(falling,sparks[i])
+    del(sparks,sparks[i])
    end
   end
+  
+  
 end
 
-function unpackl(list)
- x  = list[1]
- y  = list[2]
- dx = list[3]
- dy = list[4]
- return x,y,dx,dy
-end
 
 function _draw()
  
-	for i=1,#draw,1 do	
- 	if draw[i][4] > wave_y then
- 	 x,y,dx,dy = unpackl(draw[i])
- 	 line(x,y,dx,dy,3)
- 	end
+ cls(1)
+ //print(stat(7))
+ 
+ circfill(64,190,90,5)
+ 
+ --[[for i=1,#drawing,1 do 
+   //x,y,dx,dy,clr = unpack(drawing[i])
+   x = drawing[i][1]
+   y = drawing[i][2]
+   dx = drawing[i][3]
+   dy = drawing[i][4]
+   clr = drawing[i][5]
+   line(x,y,dx,dy,clr)
+ end--]]
+ 
+
+ for i=#draw,1,-1 do 
+  if draw[i][4] > wave_y then
+   //x,y,dx,dy,clr = unpack(draw[i])
+   x = draw[i][1]
+   y = draw[i][2]
+   dx = draw[i][3]
+   dy = draw[i][4]
+   clr = draw[i][5]
+   line(x,y,dx,dy,clr)
+  else
+   break
+  end
  end
  
- //rectfill(0,max_y,128,wave_y, 0)
- //line(min_x,wave_y,max_x,wave_y,7)
- //line(min_x,wave_y+1,max_x,wave_y+1,10)
  
- for x=min_x,max_x,1 do
-  rn1 = flr(rnd(5)) + 1
-  rn2 = flr(rnd(5)) + 1
-  pset(x,wave_y, sparks[rn1])
-  pset(x,wave_y-1, sparks[rn2])
+ 
+ for i=#falling,1,-1 do
+  local x = falling[i][1]
+  local y = falling[i][2]
+  local clr = falling[i][3]
+  pset(x,y, clr)
+  pset(x,y-1, clr)
+  pset(x-1,y-1, clr)
+  pset(x+1,y-1, clr)
+  pset(x,y-2, clr)
+  
+   falling[i][4] -= 1
+   falling[i][2] = y + 0.5
+   if falling[i][4] < 1 then
+    del(falling, falling[i])
+   end
  end
+ 
+ 
+ --[[
+ for i=#sparks,1,-1 do
+  //if sparks[i][2] > wave_y then
+  if sparks[i][2] > wave_y then
+   local x = sparks[i][1]
+   local y = sparks[i][2]
+   local clr = sparks[i][3]
+   pset(x,y, clr)
+   pset(x,y-1, clr)
+   pset(x-1,y-1, clr)
+   pset(x+1,y-1, clr)
+   pset(x,y-2, clr)
+   sparks[i][4] -= 1
+   sparks[i][2] = y + 0.5
+   if sparks[i][4] < 1 then
+    del(sparks, sparks[i])
+   end
+  else
+   break
+  end
+ end
+ ]]--
  
 end
 
@@ -127,10 +179,10 @@ function iteration()
  stack = {}
  
  x = 64
-	y = 128
-	d_x = 0
-	d_y = -8
-	
+ y = 120
+ d_x = 0
+ d_y = -8
+ 
  ang = 0.25
  ang_d = 0
 
@@ -145,54 +197,58 @@ end
 // symbol by symbol
 function run_string()
  for i=1,#string do
- 	symbol = sub(string,i,i)
- 	run_symbol(symbol)	
+  symbol = sub(string,i,i)
+  run_symbol(symbol) 
  end
- drawing = reverse(drawing)
+ //drawing = reverse(drawing)
+ //draw = sort(draw,4)
+ 
+ qsort(draw,by_y)
+ 
+ 
+ sparks = sort(sparks,2)
 end
 
 
-// execute a symbol
-// only the f symbol will
-// actually print a line
+
+// execute a symbol, only "f"
+// actually prints a line
 function run_symbol(s)
  if s == "f" then
   d_x = d * cos(ang+ang_d) 
- 	d_y = d * sin(ang+ang_d)
+  d_y = d * sin(ang+ang_d)
   //line(x, y, x+d_x, y+d_y, clr)
-  add(draw,{x,y,x+d_x, y+d_y,3})
-  //d_x = d_x - x
-  //d_y = d_y - y
-  //add(drawing,{x,y,x,y,4,d_x,d_y,0})
+  local myclr = branch_clr[flr(rnd(#branch_clr)+1)]
+  add(draw,{x,y,x+d_x, y+d_y,myclr})
+  if rnd() > 0.75 then
+   add_spark(x+d_x/2,y+d_y)
+  end
   x = x + d_x
- 	y = y + d_y
- 	
+  y = y + d_y
+  
  elseif s == "k" then
   d_x = d * cos(ang+ang_d) 
- 	d_y = d * sin(ang+ang_d)
-  //d_x = d_x - x
-  //d_y = d_y - y
+  d_y = d * sin(ang+ang_d)
   line(x, y, x+d_x, y+d_y, 0)
-  //add(drawing,{x,y,x,y,3,d_x,d_y,1})
   x = x + d_x
- 	y = y + d_y
+  y = y + d_y
  
  elseif s == "+" then
   ang_d = ang_d + 0.10
- 	d_x = d * cos(ang+ang_d) 
- 	d_y = d * sin(ang+ang_d)
+  d_x = d * cos(ang+ang_d) 
+  d_y = d * sin(ang+ang_d)
  elseif s == "-" then
- 	ang_d = ang_d - 0.10
- 	d_x = d * cos(ang-ang_d) 
- 	d_y = d * sin(ang-ang_d)
+  ang_d = ang_d - 0.10
+  d_x = d * cos(ang-ang_d) 
+  d_y = d * sin(ang-ang_d)
  elseif s == "[" then
   add(stack, {x,y,ang_d})
  elseif s == "]" then
   coords = stack[#stack]
-		x = coords[1]
-		y = coords[2]
-		ang_d = coords[3]
-		stack[#stack] = nil
+  x = coords[1]
+  y = coords[2]
+  ang_d = coords[3]
+  stack[#stack] = nil
  end
 end
 
@@ -214,19 +270,100 @@ end
 
 
 -->8
-// returns a reversed
-// sequence
+-- utility functions
+
+// returns a reversed sequence
 function reverse(seq1)
  seq2 = {}
  for i=#seq1, 1,-1 do
- 	add(seq2, seq1[i])
-	end
-	return seq2
+  add(seq2, seq1[i])
+ end
+ return seq2
 end
 
--- unpack table into spread values
+// unpack table into spread 
+// values through recursion
 function unpack(y, i)
   i = i or 1
   local g = y[i]
   if (g) return g, unpack(y, i + 1)
+end
+
+// specific unpacking with
+// no recursion
+function unpackl(list)
+ x  = list[1]
+ y  = list[2]
+ dx = list[3]
+ dy = list[4]
+ return x,y,dx,dy
+end
+
+// order by y decrescent
+function sort(list,index)
+ for i=1,#list-1,1 do
+  for j=i+1,#list,1 do
+   if list[i][index] > list[j][index] then
+    temp = list[i]
+    list[i] = list[j]
+    list[j] = temp
+   end
+  end
+ end
+ return list
+end
+
+-->8
+function add_spark(x, y)
+ local clr = sparks_clr[flr(rnd(5))+1]
+ add(sparks, {x,y, clr, 5})
+end
+-->8
+-- qsort by felice at
+-- bbs/?tid=2477
+
+-- common comparators
+function  ascending(a,b) return a<b end
+function descending(a,b) return a>b end
+function by_y(a,b)
+ return a[4]<b[4]
+end
+
+
+-- a: array to be sorted in-place
+-- c: comparator (optional, defaults to ascending)
+-- l: first index to be sorted (optional, defaults to 1)
+-- r: last index to be sorted (optional, defaults to #a)
+function qsort(a,c,l,r)
+    c,l,r=c or ascending,l or 1,r or #a
+    if l<r then
+        if c(a[r],a[l]) then
+            a[l],a[r]=a[r],a[l]
+        end
+        local lp,rp,k,p,q=l+1,r-1,l+1,a[l],a[r]
+        while k<=rp do
+            if c(a[k],p) then
+                a[k],a[lp]=a[lp],a[k]
+                lp+=1
+            elseif not c(a[k],q) then
+                while c(q,a[rp]) and k<rp do
+                    rp-=1
+                end
+                a[k],a[rp]=a[rp],a[k]
+                rp-=1
+                if c(a[k],p) then
+                    a[k],a[lp]=a[lp],a[k]
+                    lp+=1
+                end
+            end
+            k+=1
+        end
+        lp-=1
+        rp+=1
+        a[l],a[lp]=a[lp],a[l]
+        a[r],a[rp]=a[rp],a[r]
+        qsort(a,c,l,lp-1       )
+        qsort(a,c,  lp+1,rp-1  )
+        qsort(a,c,       rp+1,r)
+    end
 end
